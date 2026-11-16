@@ -17,14 +17,14 @@ DB = Path(__file__).parent / "out" / "real_project" / "cineflow.db"
 OUT = Path(__file__).parent / "out" / "renders"
 C13, C02 = "e5887df03afb44e1bda0e9c8933d4b52", "c4013143783646baa0252a339f1d542b"
 
-SHOTS = [  # asset, in, out, yaw, pitch, reason
-    (C13, 1, 4, 0, -5, "take-off from the rocks"),
-    (C13, 80, 83, -60, -5, "ridge toward the sunset"),
-    (C13, 240, 243, -70, 0, "level pass, glow on the horizon"),
-    (C02, 30, 33, 0, -10, "over the summit tower"),
-    (C02, 90, 93, 80, -5, "sea and islands"),
-    (C13, 360, 363, -40, -5, "valley reveal"),
-    (C02, 240, 243, 0, -15, "return to the landing pad"),
+SHOTS = [  # asset, in, out, yaw, pitch, reason, extra Shot fields
+    (C13, 238, 242, -70, 0, "opening: tiny planet unfolds over the ridge", {"effect": "planet_reveal"}),
+    (C13, 80, 83, -60, -5, "ridge toward the sunset", {}),
+    (C02, 30, 33, 0, -10, "over the summit tower", {}),
+    (C02, 90, 94, 40, -5, "pan from the summit to the sea and islands", {"effect": "pan", "end_view": {"yaw": 100, "pitch": -5}}),
+    (C13, 360, 363, -40, -5, "valley reveal", {}),
+    (C13, 300, 304, 0, 0, "tiny planet over the forest", {"effect": "tiny_planet", "spin": 25}),
+    (C02, 240, 243, 0, -15, "return to the landing pad", {}),
 ]
 
 conn = connect(DB)
@@ -33,8 +33,9 @@ OUT.mkdir(parents=True, exist_ok=True)
 for preset in sys.argv[1:] or ["master_16x9", "short_9x16"]:
     fov = 100 if preset == "master_16x9" else 95
     plan = EditPlan(project_id=pid, brief="Dusk ridge flight sample", output={"preset": preset},
-                    timeline=[Shot(asset_id=a, source_in=i, source_out=o, view=View(yaw=y, pitch=p, fov=fov), reason=r)
-                              for a, i, o, y, p, r in SHOTS])
+                    timeline=[Shot(asset_id=a, source_in=i, source_out=o, view=View(yaw=y, pitch=p, fov=fov), reason=r,
+                                   **{**x, **({"end_view": {**x["end_view"], "fov": fov}} if "end_view" in x else {})})
+                              for a, i, o, y, p, r, x in SHOTS])
     t = time.time()
     m = render(conn, plan, OUT / f"sample_{preset}.mp4")
     print(preset, m["render"], f"{time.time() - t:.0f}s", m["warnings"])

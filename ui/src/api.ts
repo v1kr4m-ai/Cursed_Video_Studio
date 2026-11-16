@@ -43,3 +43,20 @@ export async function pickFolder(title: string): Promise<string | null> {
   const p = await open({ directory: true, multiple: false, title });
   return typeof p === "string" ? p : null;
 }
+
+// Native file picker inside Tauri; null in a plain browser (the caller's text box still works).
+export async function pickFile(title: string, name: string, extensions: string[]): Promise<string | null> {
+  if (!("__TAURI_INTERNALS__" in window)) return null;
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  const p = await open({ multiple: false, title, filters: [{ name, extensions }] });
+  return typeof p === "string" ? p : null;
+}
+
+export type ExportItem = {
+  name: string; size_bytes: number; warnings: string[]; brief: string | null;
+  render: { width: number; height: number; duration_s: number } | null;
+};
+export type Reference = {
+  id: string; source: string; title: string; duration_s: number; width: number; height: number; vertical: boolean;
+  cuts_per_min: number; shot_len_median: number; brightness: number; saturation: number; loudness_lufs: number | null;
+};

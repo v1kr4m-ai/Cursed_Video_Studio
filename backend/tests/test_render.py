@@ -94,6 +94,31 @@ def test_render_with_music(project, tmp_path):
     assert info.has_audio and abs(info.duration_s - 0.9) < 0.1
 
 
+def test_effects(project, tmp_path):
+    conn, pid, ids = project
+    with pytest.raises(ValidationError):
+        Shot(asset_id="a", source_in=0, source_out=1, effect="pan")  # pan needs end_view
+    plan = EditPlan(project_id=pid, output={"preset": "square_1x1", "fps": "25/1"}, timeline=[
+        Shot(asset_id=ids["A_D.OSV"], source_in=0, source_out=0.8, effect="tiny_planet"),
+        Shot(asset_id=ids["A_D.OSV"], source_in=0, source_out=0.8, effect="pan", end_view=View(yaw=90)),
+        Shot(asset_id=ids["A_D.OSV"], source_in=0, source_out=0.8, effect="planet_reveal"),
+    ])
+    m = render(conn, plan, tmp_path / "fx.mp4")
+    assert all(s["stabilized"] is False for s in m["shots"])  # synthetic clip has no attitude; deliberate motion left alone
+    assert abs(probe(tmp_path / "fx.mp4").duration_s - 2.4) < 0.15
+    flat = EditPlan(project_id=pid, timeline=[Shot(asset_id=ids["b.mp4"], source_in=0, source_out=0.8, effect="tiny_planet")])
+    with pytest.raises(PlanError, match="needs 360"):
+        render(conn, flat, tmp_path / "x.mp4")
+
+
+def test_pan_commands_reach_end_view():
+    from cineflow.reframe_service import FfmpegV360Adapter
+    r = FfmpegV360Adapter().build(None, Shot(asset_id="a", source_in=0, source_out=2, effect="pan",
+                                            view=View(yaw=170), end_view=View(yaw=-170)), 1920, 1080)
+    last = r.commands.strip().splitlines()[-1]
+    assert "yaw -170.000" in last and r.moving  # took the short way across ±180, not 340° round
+
+
 def test_render_rejects_bad_times(project, tmp_path):
     conn, pid, ids = project
     plan = EditPlan(project_id=pid, timeline=[Shot(asset_id=ids["b.mp4"], source_in=0, source_out=30)])

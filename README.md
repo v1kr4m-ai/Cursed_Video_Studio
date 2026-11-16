@@ -16,15 +16,15 @@ This is early work. Only the import, preview, colour and render path exist today
 | Colour: official DJI Avata 360 D-Log M to Rec.709 LUT | Implemented, validated by eye only | No numeric comparison against DJI Studio yet |
 | Edit plan schema (subset) and render path: 2.7K/4K 16:9, 9:16 Short, 1:1, optional music, per-shot render then lossless join, export manifest | Implemented and tested | Driven from a hand-written plan; sample renders exist for 16:9 and 9:16 |
 | Backend HTTP API and desktop shell: projects, folder import, job progress, footage grid, colour-mode override | Implemented | `tsc`, `vite build` and `cargo check` pass; the window launches |
-| Gyro-based 360 stabilisation and horizon levelling | In progress, not done | Attitude data found in DJI metadata; axis and sign mapping to FFmpeg is still being calibrated |
-| Export screen in the app (render is not yet a job or an endpoint) | In progress, not done | Renders are run from scripts today |
-| Tiny-planet, asteroid and other 360 effects | Planned | Not started |
-| Reference-video style matching (from a folder, or Instagram/YouTube links) | Planned | Not started |
-| Keyframed camera moves | Planned | Views are fixed per shot today |
+| Gyro-based 360 stabilisation and horizon levelling | Implemented | Uses the drone's per-frame attitude from DJI metadata; level horizon checked by eye on two flights. Slow to render (per-frame projection rebuild). Not yet applied to effect shots |
+| Export screen: Short/Film/Square, 2.7K/4K, music, stabilise, effects, exports list with player | Implemented | Uses a basic automatic edit (shots spread evenly) until footage analysis exists |
+| 360 effects: tiny planet (spinning), rabbit hole, planet reveal, smooth pans | Implemented | |
+| Reference videos (file, or YouTube/Instagram link via yt-dlp): measured length, cut rhythm, brightness, colour, loudness | Implemented | The automatic edit follows length and cut rhythm; fuller style matching comes with the Director |
+| Image-based stabilisation (vidstab) for flat clips | Implemented | Little effect on slow drone tilt; the gyro path is the real fix for 360 |
 | Analysis (scene detection, vision-model tagging), AI Director, QC engine | Planned | Not started |
 | API auth token, shot-to-shot colour matching, creative grade, transitions other than cut, slow motion | Planned | Not started |
 
-Stabilisation is the main gap: without it, clips shot while the drone banks show a tilted horizon in the output.
+Main open items: render speed for stabilised shots, smarter shot choice (analysis), and the AI Director.
 
 ## What we learned about the footage
 
@@ -34,7 +34,7 @@ Facts marked (reverse engineered) come from inspecting sample files, not from DJ
 - **D-Log M detection** (reverse engineered). The clip header field `2.2.4.1` in the `djmd` track is absent or 0 for Normal and 19 for D-Log M. It matched all 7 clips the owner had labelled (3 D-Log M, 4 Normal) across firmware 01.00.01 and 01.00.06. Caveat: in that sample every D-Log M clip was outdoor and every Normal clip was indoor. The field sits in the static camera header rather than the GPS block, so a confound is unlikely, but one indoor D-Log M clip would settle it. Unknown codes are reported as unknown, never guessed, and a manual setting always wins.
 - **FFmpeg `v360` conventions.** `v360` converts dual fisheye straight to a flat reframed view in one pass, without a full equirectangular intermediate. Camera angles use rotation order `rorder=pyr` and a pitch offset of 90 degrees (verified on real footage). When angles are sent per frame through `sendcmd`, `reset_rot=1` makes each command absolute.
 - **Lens field of view** is about 195 degrees. This was picked by eye, not measured with a calibration target.
-- **Attitude and gyro data** (reverse engineered). Field `3.4.14.4` of each `djmd` packet is a unit quaternion (w, x, y, z), one per video frame; its norm checks out at 1.000. Field `3.3.2.1.3` holds about 134 gyro-rate samples per frame. The quaternion is what the stabiliser uses; the gyro samples are kept for possible rolling-shutter work.
+- **Attitude and gyro data** (reverse engineered). Field `3.4.14.4` of each `djmd` packet is a unit quaternion (w, x, y, z), one per video frame; its norm checks out at 1.000. Field `3.3.2.1.3` holds about 134 gyro-rate samples per frame. The quaternion drives the stabiliser (exact rotation maths from FFmpeg's `vf_v360.c`, camera mount offset 90°); the gyro samples are kept for possible rolling-shutter work.
 - **Real detail.** At a 100 degree view the footage holds about 2.7K of real detail, so a 4K export is an upscale at narrow fields of view. The export choice between 2.7K and 4K is left to the user.
 
 ## Architecture
@@ -142,8 +142,11 @@ The backend listens on `127.0.0.1:8765` only. There is no auth token yet.
 | `POST /jobs/{job_id}/cancel` | Cancel a job |
 | `GET /assets/{asset_id}/thumbnail` | Thumbnail image |
 | `PATCH /assets/{asset_id}` | Edit an asset, for example the colour mode override |
-
-There is no render endpoint yet.
+| `POST /projects/{project_id}/render` | Start a render job (preset, resolution, length, effects, stabilise, music, reference) |
+| `GET /projects/{project_id}/exports` | Finished videos |
+| `GET /projects/{project_id}/exports/{name}` | Stream one finished video |
+| `POST /projects/{project_id}/references` | Add a reference video (file or YouTube/Instagram link) |
+| `GET /projects/{project_id}/references` | Measured reference styles |
 
 ## Privacy and safety
 
@@ -165,7 +168,7 @@ There is no render endpoint yet.
 7. Personalisation: feedback capture, dataset export, evaluation.
 8. Release: installer, bundled FFmpeg, onboarding.
 
-Tiny-planet and other 360 effects, and reference-video style matching, are planned but not yet placed in a phase.
+Next planned: narrated Shorts (local AI voice + word-highlight captions), gyro on effect shots, faster stabilised rendering.
 
 More detail: [PROJECT_STATUS.md](PROJECT_STATUS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DECISIONS.md](DECISIONS.md), [TECHNICAL_RISKS.md](TECHNICAL_RISKS.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [ENVIRONMENT_REPORT.md](ENVIRONMENT_REPORT.md), [backend/README.md](backend/README.md).
 

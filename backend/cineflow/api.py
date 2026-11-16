@@ -7,6 +7,8 @@ Ingest jobs queue a proxy job when they finish.
 from __future__ import annotations
 
 import json
+import re
+from typing import Literal
 import os
 import threading
 from contextlib import asynccontextmanager
@@ -15,7 +17,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from . import __version__
 from .agent_orchestrator import Handler, InvalidTransition, State, cancel, create_job, get_job, recover, run_next
@@ -46,7 +48,40 @@ def _proxy(conn, job, report):
     return build_project_proxies(conn, job["project_id"], report)
 
 
-HANDLERS = {"ingest": Handler(State.INGESTING, _ingest), "proxy": Handler(State.PROXYING, _proxy)}
+def _render(conn, job, report):
+    from datetime import datetime
+
+    from .auto_plan import build_plan
+    from .edit_plan import EditPlan
+    from .reference_service import get_reference
+    from .render_service import render
+
+    inp = json.loads(job["inputs_json"])
+    work = Path(get_project(conn, job["project_id"])["work_dir"])
+    if inp.get("plan"):
+        plan = EditPlan.model_validate(inp["plan"])
+    else:
+        ref = get_reference(work, inp["reference_id"]) if inp.get("reference_id") else None
+        plan = build_plan(conn, job["project_id"], inp.get("preset", "short_9x16"), inp.get("resolution", "2.7k"),
+                          inp.get("target_s"), inp.get("shot_s"), inp.get("effects", True), inp.get("music_path"),
+                          ref, inp.get("asset_ids"))
+        plan.output.stabilize = inp.get("stabilize", True)
+    out = work / "exports" / f"{datetime.now():%Y%m%d_%H%M%S}_{plan.output.preset}.mp4"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    m = render(conn, plan, out, report)
+    return {"output": str(out), "name": out.name, "duration_s": m["render"]["duration_s"],
+            "width": m["render"]["width"], "height": m["render"]["height"], "warnings": m["warnings"]}
+
+
+def _reference(conn, job, report):
+    from .reference_service import add_reference
+    work = get_project(conn, job["project_id"])["work_dir"]
+    report(0.05)
+    return add_reference(work, json.loads(job["inputs_json"])["source"]).model_dump()
+
+
+HANDLERS = {"ingest": Handler(State.INGESTING, _ingest), "proxy": Handler(State.PROXYING, _proxy),
+            "render": Handler(State.RENDERING, _render), "reference": Handler(State.ANALYSING, _reference)}
 
 
 def _worker(stop: threading.Event) -> None:
@@ -206,3 +241,91 @@ def patch_asset(asset_id: str, req: AssetPatch) -> dict:
     if cur.rowcount == 0:
         raise HTTPException(404, "no such asset")
     return {"id": asset_id, "color_mode": req.color_mode, "color_mode_source": "user"}
+
+
+class RenderRequest(BaseModel):
+    preset: Literal["master_16x9", "short_9x16", "square_1x1"] = "short_9x16"
+    resolution: Literal["2.7k", "4k"] = "2.7k"
+    target_s: float | None = Field(None, ge=5, le=600)
+    shot_s: float | None = Field(None, ge=1, le=10)
+    effects: bool = True
+    stabilize: bool = True
+    music_path: str | None = None
+    reference_id: str | None = None
+    asset_ids: list[str] | None = None
+
+
+@app.post("/projects/{project_id}/render")
+def start_render(project_id: str, req: RenderRequest) -> dict:
+    conn = _conn()
+    try:
+        get_project(conn, project_id)
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
+    if req.music_path and not Path(req.music_path).is_file():
+        raise HTTPException(422, f"music file not found: {req.music_path}")
+    return {"job_id": create_job(conn, project_id, "render", req.model_dump())}
+
+
+def _exports_dir(project_id: str) -> Path:
+    try:
+        return Path(get_project(_conn(), project_id)["work_dir"]) / "exports"
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
+
+
+@app.get("/projects/{project_id}/exports")
+def list_exports(project_id: str) -> list[dict]:
+    d = _exports_dir(project_id)
+    out = []
+    for f in sorted(d.glob("*.mp4"), reverse=True) if d.is_dir() else []:
+        if ".tmp" in f.name:
+            continue
+        man = f.with_suffix(".manifest.json")
+        m = json.loads(man.read_text(encoding="utf-8")) if man.is_file() else {}
+        out.append({"name": f.name, "size_bytes": f.stat().st_size, "render": m.get("render"),
+                    "warnings": m.get("warnings", []), "brief": m.get("plan", {}).get("brief")})
+    return out
+
+
+@app.get("/projects/{project_id}/exports/{name}")
+def get_export(project_id: str, name: str) -> FileResponse:
+    if not re.fullmatch(r"[\w.-]+\.mp4", name) or ".." in name:
+        raise HTTPException(422, "bad file name")
+    f = _exports_dir(project_id) / name
+    if not f.is_file():
+        raise HTTPException(404, "no such export")
+    return FileResponse(f, media_type="video/mp4")
+
+
+class ReferenceRequest(BaseModel):
+    source: str  # local video file path, or a YouTube / Instagram link
+
+
+@app.post("/projects/{project_id}/references")
+def add_reference_job(project_id: str, req: ReferenceRequest) -> dict:
+    from .reference_service import ReferenceError, validate_url
+    conn = _conn()
+    try:
+        get_project(conn, project_id)
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
+    s = req.source.strip()
+    try:
+        if s.lower().startswith(("http://", "https://")):
+            validate_url(s)
+        elif not Path(s).is_file():
+            raise ReferenceError(f"not a video file: {s}")
+    except ReferenceError as e:
+        raise HTTPException(422, str(e)) from e
+    return {"job_id": create_job(conn, project_id, "reference", {"source": s})}
+
+
+@app.get("/projects/{project_id}/references")
+def references(project_id: str) -> list[dict]:
+    from .reference_service import list_references
+    try:
+        work = get_project(_conn(), project_id)["work_dir"]
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
+    return [r.model_dump(exclude={"cuts"}) for r in list_references(work)]

@@ -48,3 +48,20 @@ progress.bad { accent-color: var(--bad); }
 .error { position: sticky; top: 0; z-index: 5; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between;
   background: #2a1717; border-bottom: 1px solid var(--bad); padding: 10px 28px; }
 .error pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.4 Consolas, monospace; color: #ffb4b4; max-height: 30vh; overflow: auto; }
+.tabs { display: flex; gap: 6px; margin-top: 18px; border-bottom: 1px solid var(--line); }
+.tabs button { background: transparent; color: var(--muted); border-radius: 6px 6px 0 0; font-weight: 400; }
+.tabs button.on { color: var(--text); border-bottom: 2px solid var(--accent); }
+.formats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 8px 0 14px; }
+.format { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 16px; background: var(--bg); color: var(--text); border: 1px solid var(--line); font-weight: 400; }
+.format small { color: var(--muted); }
+.format.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.seg.on { border-color: var(--accent); color: var(--accent); }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.check input { width: auto; }
+.picklist { max-height: 180px; overflow: auto; margin: 6px 0 12px; padding-left: 24px; }
+.warn-text { color: var(--warn); font-size: 13px; }
+.exports { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.export { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.export video { width: 100%; max-height: 320px; background: #000; display: block; }
+.export video.vertical { aspect-ratio: 9 / 16; max-height: 420px; width: auto; margin: 0 auto; }
+.panel button + .job, .panel .field + button { margin-top: 4px; }

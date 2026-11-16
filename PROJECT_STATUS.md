@@ -48,6 +48,15 @@ need the user before Phase 1 starts (see "Waiting on the user").
   - Ingest now back-fills colour mode for clips recorded before detection existed.
 - `uv run pytest -q` → 47 passed.
 
+- 2026-11-16 (later): gyro stabilisation + horizon levelling for 360 (D-017), 360 effects
+  (tiny planet, rabbit hole, planet reveal, pans), vidstab for flat clips, basic auto edit,
+  render and reference jobs with endpoints, reference-video analysis (D-019), Export and
+  References screens (Sonnet subagent, reviewed; fixed reference length being ignored),
+  CineFlow.cmd launcher, public GitHub repo github.com/v1kr4m-ai/cineflow-ai.
+  Real sample `poc/out/renders/sample_short_9x16.mp4`: 5 gyro shots with level horizon,
+  planet reveal + tiny planet; 24 s took 620 s to render (R-15).
+- External skills reviewed (D-018): ideas adopted, no code copied.
+
 ## Not implemented
 
 API auth token; render as a job/endpoint and a UI export screen; keyframed camera moves
@@ -78,8 +87,10 @@ Reels/Shorts output (D-016).
 
 ## Next task
 
-Phase 2 finish: render as a background job with an export screen (preset, 2.7K/4K choice,
-music file), keyframed camera moves, then Phase 3 analysis so plans stop being hand-written.
+1. Faster stabilised rendering (R-15) and gyro on effect shots.
+2. Phase 3 analysis (scene detection, sharpness/exposure, local vision tagging) so the auto
+   edit picks good moments instead of evenly spaced ones.
+3. Narrated Shorts: local Kokoro voice + word-highlight captions (D-018).
 
 ## How to run
 

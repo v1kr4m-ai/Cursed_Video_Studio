@@ -65,6 +65,28 @@ manual setting always wins over detection. Replaces the statistics-first plan in
 cameras. Flat clips skip the reframe stage and use crop/scale instead. Every stage after
 ingest takes a flat, Rec.709 shot as its common format.
 
+**D-017 360 stabilisation uses the drone's own attitude data. — ACCEPTED (2026-11-16)**
+Per-frame attitude quaternion at `djmd` field 3.4.14.4 (body->world). Exact rotation maths
+taken from FFmpeg's vf_v360.c: Q = M·R_bwᵀ·R_vw, split into v360 yaw/pitch/roll (rorder ypr)
+and sent per frame with sendcmd + reset_rot=1. Mount M = 90° yaw offset, chosen by eye on two
+flights (level sea horizon); an automatic motion score picked wrongly because tree parallax
+dominates it, so it is not used for this decision. View heading follows the drone's smoothed
+heading (2.5 s). Flat clips and 360 clips without attitude data fall back to vidstab, which on
+this footage changed little (the wobble is slow tilt, not jitter).
+
+**D-018 External skill packages: ideas adopted, code not copied. — ACCEPTED (2026-11-16)**
+`ai-video-editor` (no licence) and `faceless-shorts` were reviewed. Adopted as planned work, in
+CineFlow's own code: narrated Shorts (local Kokoro TTS + faster-whisper word timing), word-highlight
+captions, Short script rules (hook, a cut every 1.5–3.5 s, looping end). Deferred: silence/retake
+cutting for speech footage; YouTube upload via the official API (not via public temp file hosts).
+Not relevant: generated cartoon/3D animation.
+
+**D-019 Reference videos set length and cut rhythm. — ACCEPTED (2026-11-16)**
+A reference (local file, or YouTube/Instagram link fetched with yt-dlp on the user's request) is
+measured, never copied into output: duration, aspect, cuts (scdet), shot-length distribution,
+brightness, saturation, contrast, loudness. The basic auto edit uses its length and median
+shot length; the Director (Phase 4) will use the rest.
+
 **D-016 Vertical short-form output is a first-class product: Reels and YouTube Shorts. — ACCEPTED (user, 2026-11-16)**
 Render presets include 9:16 1080x1920. For 360 footage the virtual camera is aimed in a
 vertical frame, so nothing is cropped away. For flat 16:9 footage the 9:16 frame is a moving

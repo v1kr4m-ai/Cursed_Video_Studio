@@ -49,11 +49,15 @@ def _inputs_and_filter(info: MediaInfo, source: str, width: int) -> tuple[list[s
 
 
 def _ffmpeg_with_progress(args: list[str], duration_s: float,
-                          on_progress: Callable[[float], None] | None) -> None:
-    """Run ffmpeg, reporting progress from its own `-progress` output (out_time vs duration)."""
+                          on_progress: Callable[[float], None] | None, cwd: Path | None = None) -> None:
+    """Run ffmpeg, reporting progress from its own `-progress` output (out_time vs duration).
+
+    `cwd` lets filter arguments name helper files (sendcmd scripts, vidstab transforms) by a
+    plain relative name, avoiding Windows drive-letter escaping inside filter graphs.
+    """
     cmd = [find_tool("ffmpeg"), "-hide_banner", "-v", "error", "-nostdin", "-y",
            "-progress", "pipe:1", *args]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=cwd)
     try:
         for line in proc.stdout:
             if line.startswith("out_time_us=") and on_progress and duration_s > 0:

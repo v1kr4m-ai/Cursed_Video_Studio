@@ -2,7 +2,20 @@
 
 Status key: OPEN (unresolved), MITIGATED (workable answer exists), CLOSED.
 
-## R-01 No gyro stabilisation or horizon levelling — OPEN, highest impact
+## R-15 Per-frame camera commands are slow — OPEN
+
+Every sendcmd update makes v360 rebuild its full remap table. Gyro-stabilised shots, pans and
+planet reveals therefore render several times slower than fixed views. Tiny planet / rabbit
+hole avoid it (one projection, then a cheap 2D rotate). Upgrade path: a remap built once per
+shot with the rotation applied in a cheaper stage, or a GPU remap.
+
+## R-01 Gyro stabilisation and horizon levelling — MITIGATED (2026-11-16, D-017)
+
+Solved with the drone's attitude data; level horizon confirmed by eye on two flights. Open
+details: rolling-shutter wobble (the 134 gyro samples per frame are not used yet), mount
+offset chosen by eye rather than measured, and slow rendering (R-15).
+
+Original note:
 
 The proof of concept stitches and reframes correctly, but the horizon in the output is tilted
 because the drone was banking. DJI Studio levels and stabilises using the gyro data in the

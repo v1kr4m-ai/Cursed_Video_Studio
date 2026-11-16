@@ -16,6 +16,7 @@ from fractions import Fraction
 from pathlib import Path
 
 from . import __version__
+from .attitude import read_quaternions
 from .color_service import filter_for, profile_for
 from .edit_plan import EditPlan, check_against_assets
 from .metadata_service import MediaInfo, probe
@@ -64,22 +65,47 @@ def render(conn: sqlite3.Connection, plan: EditPlan, out: Path,
         if isinstance(adapter, FlatCropAdapter) and (f := adapter.upscale_factor(info, w, h)) > 1.05:
             warnings.append(f"shot {i}: source is upscaled {f:.2f}x for this output size")
         profile = profile_for(a["color_mode"], a["kind"])
-        chain = adapter.filter(info, shot.view, shot.crop, w, h)
+        attitude = None
+        if plan.output.stabilize and a["kind"] == "dual_fisheye" and shot.effect in ("none", "pan"):
+            attitude = read_quaternions(a["path"], shot.source_in, shot.source_out - shot.source_in) or None
+            if attitude is None:
+                warnings.append(f"shot {i}: no attitude data, using image-based stabilisation instead")
+        r = adapter.build(info, shot, w, h, attitude)
         lut = filter_for(profile)
-        vf = ",".join(x for x in (chain, lut, f"fps={plan.output.fps}", "format=yuv420p") if x)
+        pre = ",".join(x for x in (r.chain, lut) if x)
+        stab = plan.output.stabilize and not r.moving   # vidstab only where the gyro path did not apply
         dur = shot.source_out - shot.source_in
         part = work / f"{i:04d}.mp4"
+        sd = work / f"{i:04d}"
+        sd.mkdir(exist_ok=True)
+        if r.commands:
+            (sd / "cmds.txt").write_text(r.commands, encoding="utf-8")
+        src = ["-ss", f"{shot.source_in:.3f}", "-t", f"{dur:.3f}", "-i", a["path"]]
+        share = 0.5 if stab else 1.0
+
+        def prog(offset: float, frac: float, base=done, d=dur):
+            if on_progress:
+                on_progress(0.95 * (base + (offset + frac * share) * d) / total)
+
         if not part.exists():  # resume: finished parts are kept
+            post = [f"fps={plan.output.fps}", "format=yuv420p"]
+            if stab:
+                # Pass 1 measures shake; pass 2 smooths it and crops/zooms just enough to hide edges.
+                _ffmpeg_with_progress([*src, "-filter_complex", f"{pre},vidstabdetect=shakiness=6:accuracy=12:result=t.trf",
+                                       "-an", "-f", "null", "-"], dur, lambda f: prog(0, f), cwd=sd)
+                post = ["vidstabtransform=input=t.trf:smoothing=25:optzoom=1:interpol=bicubic",
+                        "unsharp=5:5:0.4:3:3:0.2", *post]
             tmp = part.with_name(part.stem + ".tmp.mp4")
-            _ffmpeg_with_progress(
-                ["-ss", f"{shot.source_in:.3f}", "-t", f"{dur:.3f}", "-i", a["path"],
-                 "-filter_complex", vf, "-an", *_encoder(plan), "-video_track_timescale", "90000", str(tmp)],
-                dur, (lambda f, base=done, d=dur: on_progress(0.95 * (base + f * d) / total)) if on_progress else None)
+            _ffmpeg_with_progress([*src, "-filter_complex", ",".join([pre, *post]), "-an", *_encoder(plan),
+                                   "-video_track_timescale", "90000", str(tmp)],
+                                  dur, lambda f: prog(1 - share, f), cwd=sd)
             tmp.replace(part)
         parts.append(part)
         shots_meta.append({"index": i, "asset_id": a["id"], "source": a["path"], "in": shot.source_in,
                            "out": shot.source_out, "adapter": adapter.name, "color_profile": profile.id,
-                           "color_mode_source": a["color_mode_source"], "view": shot.view.model_dump()})
+                           "color_mode_source": a["color_mode_source"], "view": shot.view.model_dump(),
+                           "effect": shot.effect,
+                           "stabilized": "gyro" if attitude else ("image" if stab else False)})
         done += dur
 
     concat = work / "list.txt"

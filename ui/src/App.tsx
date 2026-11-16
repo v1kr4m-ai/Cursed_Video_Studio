@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API, Asset, DONE, Job, Project, call, pickFolder } from "./api";
+import { ExportPanel, JobBar, ReferencePanel } from "./Studio";
 
 const KIND: Record<string, string> = {
   dual_fisheye: "360 video", equirectangular: "360 video",
   dual_fisheye_proxy: "Preview copy (360)", flat: "Flat video",
 };
 const COLOR: Record<string, string> = { dlog_m: "D-Log M", normal: "Normal" };
-const STATE: Record<string, string> = {
-  NEW: "Waiting to start", INGESTING: "Reading files", PROXYING: "Making previews",
-  COMPLETED: "Done", FAILED: "Failed", CANCELLED: "Cancelled",
-};
 
 function fps(r: string) {
   const [n, d] = r.split("/").map(Number);
@@ -78,21 +75,6 @@ function Projects({ onOpen, onError }: { onOpen: (p: Project) => void; onError: 
         <button disabled={!name.trim() || !dir.trim()} onClick={create}>Create project</button>
       </section>
     </main>
-  );
-}
-
-function JobBar({ job }: { job: Job }) {
-  const label = job.type === "ingest" ? "Importing footage" : "Making preview copies";
-  const live = !DONE.includes(job.state);
-  return (
-    <div className="job">
-      <div className="row between">
-        <span>{label}</span>
-        <span className="muted">{STATE[job.state] ?? job.state}{live && ` · ${Math.round(job.progress * 100)}%`}</span>
-      </div>
-      <progress max={1} value={job.progress} className={job.state === "FAILED" ? "bad" : ""} />
-      {job.error && <small className="bad-text">{job.error}</small>}
-    </div>
   );
 }
 
@@ -180,6 +162,7 @@ function ProjectView({ project, onBack, onError }: { project: Project; onBack: (
 
   // DJI .LRF files are the camera's own low-res copies, used internally for previews.
   const clips = assets.filter((a) => a.kind !== "dual_fisheye_proxy");
+  const [tab, setTab] = useState<"footage" | "make" | "refs">("footage");
 
   const setColor = async (id: string, color_mode: string) => {
     try { await call(`/assets/${id}`, "PATCH", { color_mode }); await loadAssets(); }
@@ -192,6 +175,14 @@ function ProjectView({ project, onBack, onError }: { project: Project; onBack: (
       <h2>{project.name}</h2>
       <p className="muted">{project.work_dir}</p>
 
+      <div className="tabs" role="tablist">
+        {([["footage", "Footage"], ["make", "Make a video"], ["refs", "References"]] as const).map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
+        ))}
+      </div>
+      {tab === "make" && <ExportPanel project={project} clips={clips} onError={onError} />}
+      {tab === "refs" && <ReferencePanel project={project} onError={onError} />}
+      {tab === "footage" && <>
       <section className="panel">
         <h3>Import footage</h3>
         <FolderField label="Footage folder" value={folder} onChange={setFolder} />
@@ -204,6 +195,7 @@ function ProjectView({ project, onBack, onError }: { project: Project; onBack: (
       <div className="grid">
         {clips.map((a) => <AssetCard key={a.id} a={a} v={thumbV} onColor={setColor} />)}
       </div>
+      </>}
     </main>
   );
 }

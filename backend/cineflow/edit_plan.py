@@ -32,11 +32,23 @@ class Crop(BaseModel):
     y: float = Field(0.5, ge=0, le=1)
 
 
+Effect = Literal["none", "pan", "tiny_planet", "rabbit_hole", "planet_reveal"]
+
+
 class Shot(BaseModel):
+    """`effect` (360 footage only):
+    pan            - view moves smoothly from `view` to `end_view`
+    tiny_planet    - stereographic "little planet", slowly spinning (`spin` °/s)
+    rabbit_hole    - stereographic looking straight up
+    planet_reveal  - starts as a tiny planet and unfolds into `view`
+    """
     asset_id: str
     source_in: float = Field(ge=0)
     source_out: float
     view: View = View()
+    end_view: View | None = None
+    effect: Effect = "none"
+    spin: float = Field(20, ge=-90, le=90)
     crop: Crop = Crop()
     speed: Literal[1.0] = 1.0          # slow motion arrives with frame-rate checks (Phase 4)
     transition_in: Literal["cut"] = "cut"
@@ -49,6 +61,8 @@ class Shot(BaseModel):
             raise ValueError("shot must be at least 0.5 s long")
         if self.source_out - self.source_in > 600:
             raise ValueError("shot longer than 10 minutes")
+        if self.effect == "pan" and self.end_view is None:
+            raise ValueError("pan needs end_view")
         return self
 
 
@@ -58,6 +72,7 @@ class Output(BaseModel):
     fps: Literal["24000/1001", "24/1", "25/1", "30000/1001", "30/1", "50/1", "60000/1001"] = "30000/1001"
     codec: Literal["h264", "h265"] = "h264"
     quality: int = Field(20, ge=14, le=32)       # constant-quality value; lower = better
+    stabilize: bool = True   # remove shake (vidstab) on shots without a deliberate camera effect
 
 
 class Audio(BaseModel):
@@ -97,6 +112,8 @@ def check_against_assets(plan: EditPlan, assets: dict[str, dict]) -> None:
             problems.append(f"shot {i}: asset is {a['status']}")
         if a.get("proxy_of"):
             problems.append(f"shot {i}: asset is a proxy file, use the original")
+        if s.effect != "none" and a["kind"] != "dual_fisheye":
+            problems.append(f"shot {i}: effect '{s.effect}' needs 360 footage")
         if s.source_out > a["duration_s"] + 1e-3:
             problems.append(f"shot {i}: ends at {s.source_out:.2f}s but clip is {a['duration_s']:.2f}s")
     if problems:
