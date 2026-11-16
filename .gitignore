@@ -1,0 +1,12 @@
+poc/out/
+backend/.venv/
+__pycache__/
+.pytest_cache/
+*.db
+*.db-wal
+*.db-shm
+
+ui/node_modules/
+ui/dist/
+ui/src-tauri/target/
+ui/src-tauri/gen/
