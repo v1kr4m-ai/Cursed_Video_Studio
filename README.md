@@ -87,14 +87,14 @@ The UI is in `ui/` (React, TypeScript, Tauri v2). `poc/` holds the proof-of-conc
 
 ## Quick start
 
-Double-click `CineFlow.cmd`. It frees port 8765 if an earlier run left it busy, starts the backend in a minimised window, waits up to 30 seconds for `/health`, installs UI packages on first run, and opens the desktop window with `npm run tauri dev`. When you close the window it stops the backend and frees port 8765 again. The first launch compiles the Rust shell and takes a while.
+Double-click `CineFlow.cmd`. It stops CineFlow processes left over from an earlier run (matched by command line; it never stops other programs), refuses to start if port 47615 belongs to another program, starts the backend in a minimised window, waits for `/health` to answer as CineFlow, installs UI packages on first run, and opens the desktop window with `npm run tauri dev`. Closing the window stops CineFlow's backend and frees the port. The first launch compiles the Rust shell and takes a while.
 
 By hand, in two terminals:
 
 ```
 cd backend
 uv sync
-uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 8765
+uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 47615
 ```
 
 ```
@@ -123,11 +123,11 @@ Tests that read real footage use the folder named by `CINEFLOW_SAMPLE_DIR` and a
 | `CINEFLOW_FFPROBE` | Path to `ffprobe.exe` | Looked up on `PATH` |
 | `CINEFLOW_LUT_DIR` | Extra folder searched for the Avata 360 LUT | DJI Studio install |
 | `CINEFLOW_SAMPLE_DIR` | Folder of real OSV/LRF files for the real-footage tests | Tests skipped if absent |
-| `VITE_API_URL` | Backend URL used by the UI at build time | `http://127.0.0.1:8765` |
+| `VITE_API_URL` | Backend URL used by the UI at build time | `http://127.0.0.1:47615` |
 
 ## API
 
-The backend listens on `127.0.0.1:8765` only. There is no auth token yet.
+The backend listens on `127.0.0.1:47615` only. There is no auth token yet.
 
 | Method and path | Purpose |
 |---|---|

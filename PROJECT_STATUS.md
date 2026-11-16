@@ -15,7 +15,7 @@ need the user before Phase 1 starts (see "Waiting on the user").
 
 - Phase 1 steps 1–2 (backend skeleton + `metadata_service`), in `backend/`:
   - `uv run pytest -q` → 13 passed, including the test that probes all 7 real OSV and 6 LRF files.
-  - Server started on 127.0.0.1:8765; `/health` ok, `/probe` on a real 324 s OSV returned
+  - Server started on 127.0.0.1:8765 (since moved to 47615); `/health` ok, `/probe` on a real 324 s OSV returned
     `dual_fisheye`, two 3840² 10-bit 29.97 fps streams, no audio.
   - SQLite schema `0001_init` (projects, assets, jobs, job_events); migrations idempotent.
 
@@ -95,7 +95,7 @@ Reels/Shorts output (D-016).
 ## How to run
 
 Backend + desktop window: `run-dev.ps1` (Windows may need the user to allow local scripts).
-Or by hand: `cd backend && uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 8765`, then
+Or by hand: `cd backend && uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 47615`, then
 `cd ui && npm run tauri dev`. Set `CINEFLOW_DB` to open a specific project database.
 
 ## Documents

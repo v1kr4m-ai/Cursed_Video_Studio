@@ -203,6 +203,13 @@ function ProjectView({ project, onBack, onError }: { project: Project; onBack: (
 export default function App() {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Make sure the server at API is really CineFlow: another program on the same port answers
+  // every request with "404 Not Found", which is confusing without this check.
+  useEffect(() => {
+    fetch(`${API}/health`).then((r) => r.json()).then((h) => {
+      if (h?.service !== "cineflow") setError(`The server at ${API} is not CineFlow. Another program is using that port. Start CineFlow with CineFlow.cmd.`);
+    }).catch(() => setError(`CineFlow's backend is not running at ${API}. Start CineFlow with CineFlow.cmd.`));
+  }, []);
   return (
     <>
       <header><h1>CineFlow <span>AI</span></h1></header>

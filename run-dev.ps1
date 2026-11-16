@@ -4,12 +4,12 @@ $root = $PSScriptRoot
 $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
 
 $backend = Start-Process -FilePath "uv" -WorkingDirectory "$root\backend" -PassThru -WindowStyle Minimized `
-    -ArgumentList "run", "uvicorn", "cineflow.api:app", "--host", "127.0.0.1", "--port", "8765"
+    -ArgumentList "run", "uvicorn", "cineflow.api:app", "--host", "127.0.0.1", "--port", "47615"
 try {
     $ready = $false
     for ($i = 0; $i -lt 60 -and -not $ready; $i++) {
-        if ($backend.HasExited) { throw "Backend exited early (code $($backend.ExitCode)). Is port 8765 already in use?" }
-        try { $ready = (Invoke-RestMethod "http://127.0.0.1:8765/health" -TimeoutSec 2).status -in "ok", "degraded" }
+        if ($backend.HasExited) { throw "Backend exited early (code $($backend.ExitCode)). Is port 47615 already in use?" }
+        try { $ready = (Invoke-RestMethod "http://127.0.0.1:47615/health" -TimeoutSec 2).status -in "ok", "degraded" }
         catch { Start-Sleep -Milliseconds 500 }
     }
     if (-not $ready) { throw "Backend did not answer /health within 30 s." }

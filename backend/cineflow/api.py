@@ -126,7 +126,8 @@ def health() -> dict:
         except ToolNotFound as e:
             tools[name] = None
             tools[f"{name}_error"] = str(e)
-    return {"status": "ok" if all(tools.get(n) for n in ("ffmpeg", "ffprobe")) else "degraded",
+    # "service" lets the launcher and UI tell CineFlow apart from other programs on the same port.
+    return {"service": "cineflow", "status": "ok" if all(tools.get(n) for n in ("ffmpeg", "ffprobe")) else "degraded",
             "version": __version__, "tools": tools}
 
 

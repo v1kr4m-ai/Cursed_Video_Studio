@@ -5,7 +5,7 @@ Python 3.12 (pinned via `uv`), FastAPI, SQLite.
 ```
 uv sync
 uv run pytest -q
-uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 8765
+uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 47615
 ```
 
 - FFmpeg/FFprobe come from PATH unless `CINEFLOW_FFMPEG` / `CINEFLOW_FFPROBE` are set.

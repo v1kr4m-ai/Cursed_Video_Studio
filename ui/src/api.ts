@@ -1,4 +1,4 @@
-export const API: string = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8765";
+export const API: string = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:47615";
 
 export type Project = { id: string; name: string; work_dir: string; created_at: string };
 export type Asset = {
