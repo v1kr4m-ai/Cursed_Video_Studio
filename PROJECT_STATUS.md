@@ -57,6 +57,12 @@ need the user before Phase 1 starts (see "Waiting on the user").
   planet reveal + tiny planet; 24 s took 620 s to render (R-15).
 - External skills reviewed (D-018): ideas adopted, no code copied.
 
+- 2026-11-17: CineFlow moved to port 47615 (8765 belongs to another local app). Offline footage
+  (e.g. SD card unplugged) is flagged, skipped by the auto edit, refused with a clear message at
+  render, and can be re-linked by content fingerprint (`POST /projects/{id}/relink`, Footage tab).
+  Moving 360 views use cubic interpolation (R-15): sample Short 620 s -> 271 s. Clip picker in
+  Make a video shows thumbnails. 55 tests pass.
+
 ## Not implemented
 
 API auth token; render as a job/endpoint and a UI export screen; keyframed camera moves

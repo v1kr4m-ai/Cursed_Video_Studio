@@ -94,6 +94,7 @@ function AssetCard({ a, v, onColor }: { a: Asset; v: number; onColor: (id: strin
         <div className="name" title={a.path}>{a.path.split(/[\\/]/).pop()}</div>
         <div className="tags">
           <span className="tag">{KIND[a.kind] ?? a.kind}</span>
+          {a.online === false && <span className="tag bad" title={a.path}>Offline: drive not connected</span>}
           {a.status === "ok"
             ? <span className="tag ok">OK</span>
             : <span className={`tag ${a.status === "corrupt" ? "bad" : "warn"}`}>{a.status === "corrupt" ? "Damaged file" : "Duplicate"}</span>}
@@ -164,6 +165,16 @@ function ProjectView({ project, onBack, onError }: { project: Project; onBack: (
   const clips = assets.filter((a) => a.kind !== "dual_fisheye_proxy");
   const [tab, setTab] = useState<"footage" | "make" | "refs">("footage");
 
+  const offline = clips.filter((a) => a.online === false);
+  const [relinkDir, setRelinkDir] = useState("");
+  const relink = async () => {
+    try {
+      const r = await call<{ relinked: number; still_offline: number }>(`/projects/${project.id}/relink`, "POST", { folder: relinkDir.trim() });
+      await loadAssets();
+      if (r.still_offline) onError(`Found ${r.relinked} clip(s); ${r.still_offline} still offline. Check the folder or card.`);
+    } catch (e: any) { onError(e.message); }
+  };
+
   const setColor = async (id: string, color_mode: string) => {
     try { await call(`/assets/${id}`, "PATCH", { color_mode }); await loadAssets(); }
     catch (e: any) { onError(e.message); }
@@ -183,6 +194,13 @@ function ProjectView({ project, onBack, onError }: { project: Project; onBack: (
       {tab === "make" && <ExportPanel project={project} clips={clips} onError={onError} />}
       {tab === "refs" && <ReferencePanel project={project} onError={onError} />}
       {tab === "footage" && <>
+      {offline.length > 0 && <section className="panel warn-panel">
+        <h3>{offline.length} clip(s) offline</h3>
+        <p className="muted">Their files are not where they were imported from (for example an SD card that is not plugged in).
+          Plug the card back in, or choose the folder where the files are now. Clips are matched by content, so a different drive letter is fine.</p>
+        <FolderField label="Folder or card with the footage" value={relinkDir} onChange={setRelinkDir} />
+        <button disabled={!relinkDir.trim()} onClick={relink}>Re-link</button>
+      </section>}
       <section className="panel">
         <h3>Import footage</h3>
         <FolderField label="Footage folder" value={folder} onChange={setFolder} />

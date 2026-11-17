@@ -83,7 +83,34 @@ def test_manifest_and_estimate(db, footage, tmp_path):
 def test_ingest_real_folder(db, tmp_path):
     pid = create_project(db, "avata", tmp_path / "work")
     rep = ingest_folder(db, pid, SAMPLE_DIR)
-    assert rep.found == 13 and rep.corrupt == 0 and rep.duplicates == 0
-    assert rep.linked_proxies == 6
+    # Counts are lower bounds: the user keeps adding clips to this folder.
+    assert rep.found >= 13 and rep.corrupt == 0 and rep.duplicates == 0
+    assert rep.linked_proxies >= 6
     est = storage_estimate(db, pid)
-    assert est["assets"] == 7 and est["source_seconds"] > 1100
+    assert est["assets"] >= 7 and est["source_seconds"] > 1100
+
+
+def test_offline_and_relink(db, footage, tmp_path):
+    """Card unplugged: render refuses clearly; card back under another 'drive letter': relink finds it."""
+    from cineflow.auto_plan import AutoPlanError, build_plan
+    from cineflow.edit_plan import EditPlan, PlanError, Shot, check_against_assets
+    from cineflow.media_ingest import relink
+
+    pid = create_project(db, "trip", tmp_path / "work")
+    ingest_folder(db, pid, footage)
+    db.execute("UPDATE assets SET color_mode='normal'")
+    clip = next(r for r in list_assets(db, pid) if r["path"].endswith("clip.mp4"))
+
+    moved = tmp_path / "other_drive"
+    shutil.move(str(footage), str(moved))   # card removed / remounted elsewhere
+
+    plan = EditPlan(project_id=pid, timeline=[Shot(asset_id=clip["id"], source_in=0, source_out=0.8)])
+    with pytest.raises(PlanError, match="offline"):
+        check_against_assets(plan, {clip["id"]: dict(clip)})
+    with pytest.raises(AutoPlanError, match="offline"):
+        build_plan(db, pid, target_s=5, shot_s=1)
+
+    r = relink(db, pid, moved)
+    assert r["relinked"] == 5 and r["still_offline"] == 0
+    new_path = db.execute("SELECT path FROM assets WHERE id = ?", (clip["id"],)).fetchone()[0]
+    assert new_path.startswith(str(moved))

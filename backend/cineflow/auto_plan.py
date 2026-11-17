@@ -9,6 +9,7 @@ Everything it decides is written into the plan's `reason` fields so the result i
 from __future__ import annotations
 
 import sqlite3
+from pathlib import Path
 
 from .edit_plan import Audio, EditPlan, Output, Shot, View
 from .reference_service import StyleProfile
@@ -36,6 +37,11 @@ def build_plan(conn: sqlite3.Connection, project_id: str, preset: str = "short_9
                         "AND color_mode IS NOT NULL ORDER BY path", (project_id,)).fetchall()
     if asset_ids:
         rows = [r for r in rows if r["id"] in set(asset_ids)]
+    offline = [r for r in rows if not Path(r["path"]).is_file()]
+    rows = [r for r in rows if Path(r["path"]).is_file()]
+    if offline and not rows:
+        raise AutoPlanError(f"all {len(offline)} clips are offline (e.g. {offline[0]['path']}). "
+                            "Reconnect the drive or card, or use Re-link in the Footage tab")
     clips = [(r, EDGE_SKIP_S, r["duration_s"] - EDGE_SKIP_S) for r in rows if r["duration_s"] - 2 * EDGE_SKIP_S >= MIN_USABLE_S]
     if not clips:
         raise AutoPlanError("no usable clips (need colour mode set and at least "

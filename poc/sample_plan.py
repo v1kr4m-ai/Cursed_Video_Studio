@@ -28,7 +28,7 @@ SHOTS = [  # asset, in, out, yaw, pitch, reason, extra Shot fields
 ]
 
 conn = connect(DB)
-pid = conn.execute("SELECT id FROM projects").fetchone()[0]
+pid = conn.execute("SELECT project_id FROM assets WHERE id = ?", (C13,)).fetchone()[0]
 OUT.mkdir(parents=True, exist_ok=True)
 for preset in sys.argv[1:] or ["master_16x9", "short_9x16"]:
     fov = 100 if preset == "master_16x9" else 95

@@ -3,7 +3,7 @@ export const API: string = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:476
 export type Project = { id: string; name: string; work_dir: string; created_at: string };
 export type Asset = {
   id: string; path: string; kind: string; duration_s: number; proxy_of: string | null;
-  color_mode: string | null; color_mode_source: string | null; status: string; error: string | null;
+  color_mode: string | null; color_mode_source: string | null; status: string; error: string | null; online?: boolean;
   probe: { video: { width: number; height: number; fps: string }[] };
 };
 export type Job = {

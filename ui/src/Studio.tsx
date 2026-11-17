@@ -181,10 +181,14 @@ export function ExportPanel({ project, clips, onError }: { project: Project; cli
         {!useAll && (
           <div className="picklist">
             {clips.map((a) => (
-              <label key={a.id} className="check">
-                <input type="checkbox" checked={picked.has(a.id)} onChange={(e) => {
-                  const n = new Set(picked); e.target.checked ? n.add(a.id) : n.delete(a.id); setPicked(n);
-                }} /> {a.path.split(/[\\/]/).pop()}
+              <label key={a.id} className={`pick ${picked.has(a.id) ? "on" : ""}`}>
+                <img src={`${API}/assets/${a.id}/thumbnail`} alt="" loading="lazy"
+                  onError={(e) => { (e.target as HTMLImageElement).style.visibility = "hidden"; }} />
+                <span className="check">
+                  <input type="checkbox" checked={picked.has(a.id)} onChange={(e) => {
+                    const n = new Set(picked); e.target.checked ? n.add(a.id) : n.delete(a.id); setPicked(n);
+                  }} /> {a.path.split(/[\\/]/).pop()}
+                </span>
               </label>
             ))}
           </div>

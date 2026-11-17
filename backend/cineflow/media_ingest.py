@@ -121,6 +121,31 @@ def ingest_folder(conn: sqlite3.Connection, project_id: str, folder: str | Path,
     return rep
 
 
+def relink(conn: sqlite3.Connection, project_id: str, folder: str | Path) -> dict:
+    """Find offline assets in `folder` by content fingerprint and point them at the new paths.
+    Handles a card that came back under another drive letter, or footage copied elsewhere."""
+    # Several assets can share a fingerprint (byte-identical copies), so keep a list per hash
+    # and match one file to one asset, preferring the same file name.
+    offline: dict[str, list] = {}
+    for r in conn.execute("SELECT id, path, quick_hash, size_bytes FROM assets WHERE project_id = ?", (project_id,)):
+        if not Path(r["path"]).is_file():
+            offline.setdefault(r["quick_hash"], []).append(r)
+    sizes = {r["size_bytes"] for rs in offline.values() for r in rs}
+    found = 0
+    for p in discover(folder):
+        if not any(offline.values()):
+            break
+        if p.stat().st_size not in sizes:  # cheap filter before hashing
+            continue
+        rs = offline.get(quick_hash(p))
+        if rs:
+            r = next((x for x in rs if Path(x["path"]).name.lower() == p.name.lower()), rs[0])
+            rs.remove(r)
+            conn.execute("UPDATE assets SET path = ? WHERE id = ?", (str(p), r["id"]))
+            found += 1
+    return {"relinked": found, "still_offline": sum(len(rs) for rs in offline.values())}
+
+
 def link_proxies(conn: sqlite3.Connection, project_id: str) -> int:
     """Point each DJI .LRF at the .OSV with the same name in the same folder."""
     rows = conn.execute("SELECT id, path FROM assets WHERE project_id = ? AND kind = ? AND proxy_of IS NULL",

@@ -165,8 +165,26 @@ def project(project_id: str) -> dict:
 
 @app.get("/projects/{project_id}/assets")
 def assets(project_id: str) -> list[dict]:
-    return [{k: r[k] for k in r.keys() if k != "probe_json"} | {"probe": json.loads(r["probe_json"])}
+    return [{k: r[k] for k in r.keys() if k != "probe_json"}
+            | {"probe": json.loads(r["probe_json"]), "online": Path(r["path"]).is_file()}
             for r in list_assets(_conn(), project_id)]
+
+
+class RelinkRequest(BaseModel):
+    folder: str
+
+
+@app.post("/projects/{project_id}/relink")
+def relink_assets(project_id: str, req: RelinkRequest) -> dict:
+    from .media_ingest import relink
+    conn = _conn()
+    try:
+        get_project(conn, project_id)
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
+    if not Path(req.folder).is_dir():
+        raise HTTPException(422, f"not a folder: {req.folder}")
+    return relink(conn, project_id, req.folder)
 
 
 class IngestRequest(BaseModel):

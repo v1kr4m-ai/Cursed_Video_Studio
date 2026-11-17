@@ -51,7 +51,8 @@ def test_ingest_records_mode_and_keeps_user_override(tmp_path):
     pid = create_project(conn, "p", tmp_path / "w")
     ingest_folder(conn, pid, SAMPLE_DIR)
     modes = {r["path"].rsplit("\\", 1)[-1]: r["color_mode"] for r in list_assets(conn, pid) if r["kind"] == "dual_fisheye"}
-    assert {n for n, m in modes.items() if m == "dlog_m"} == set(DLOG_M)
+    # The folder may hold newer clips too; only the user-labelled ones are asserted.
+    assert all(modes[n] == "dlog_m" for n in DLOG_M) and all(modes[n] == "normal" for n in NORMAL)
 
     conn.execute("UPDATE assets SET color_mode='normal', color_mode_source='user', size_bytes=0 WHERE path LIKE ?",
                  (f"%{DLOG_M[0]}",))  # size_bytes=0 forces a re-ingest of that file

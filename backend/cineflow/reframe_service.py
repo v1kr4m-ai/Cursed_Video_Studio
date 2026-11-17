@@ -17,6 +17,9 @@ from .metadata_service import AssetKind, MediaInfo
 AVATA360_LENS_FOV = 195  # picked by eye in Phase 0 (R-04)
 PLANET_FOV = 250         # stereographic field of view for tiny planet / rabbit hole (poc/out/planet_test.jpg)
 CMD_RATE = 30            # camera keyframes per second
+# v360 rebuilds its remap table on every camera command. Measured (poc/speed_test.py, 3 s shot,
+# 1080x1920): lanczos 209 s, cubic 28 s, fixed view 5 s. So moving views use cubic (R-15).
+MOVING_INTERP = "interp=cubic"
 
 
 @dataclass
@@ -134,7 +137,7 @@ class FfmpegV360Adapter:
                          f"v360@s h_fov {hf:.3f}, v360@s v_fov {vf:.3f};")
         a, p, r, hf, vf = first
         base = (f"v360@s=dfisheye:flat:ih_fov={AVATA360_LENS_FOV}:iv_fov={AVATA360_LENS_FOV}:rorder=ypr:reset_rot=1"
-                f":yaw={a:.3f}:pitch={p:.3f}:roll={r:.3f}:h_fov={hf:.3f}:v_fov={vf:.3f}:w={w}:h={h}:interp=lanczos")
+                f":yaw={a:.3f}:pitch={p:.3f}:roll={r:.3f}:h_fov={hf:.3f}:v_fov={vf:.3f}:w={w}:h={h}:{MOVING_INTERP}")
         return Reframe(f"[0:v:0][0:v:1]hstack,sendcmd=f=cmds.txt,{base}", "\n".join(lines) + "\n", True)
 
 

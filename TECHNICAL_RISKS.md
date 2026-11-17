@@ -2,7 +2,11 @@
 
 Status key: OPEN (unresolved), MITIGATED (workable answer exists), CLOSED.
 
-## R-15 Per-frame camera commands are slow — OPEN
+## R-15 Per-frame camera commands are slow — MITIGATED (2026-11-17)
+
+Measured (poc/speed_test.py, 3 s shot at 1080x1920): lanczos 209 s, cubic 28 s, fixed view 5 s.
+Moving views now use cubic; the real 24 s sample Short fell from 620 s to 271 s. Still ~5x slower
+than a fixed view. Original note:
 
 Every sendcmd update makes v360 rebuild its full remap table. Gyro-stabilised shots, pans and
 planet reveals therefore render several times slower than fixed views. Tiny planet / rabbit

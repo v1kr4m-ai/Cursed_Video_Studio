@@ -7,6 +7,7 @@ exist, times inside the clip). Only operations listed here can ever be executed.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -114,6 +115,9 @@ def check_against_assets(plan: EditPlan, assets: dict[str, dict]) -> None:
             problems.append(f"shot {i}: asset is a proxy file, use the original")
         if s.effect != "none" and a["kind"] != "dual_fisheye":
             problems.append(f"shot {i}: effect '{s.effect}' needs 360 footage")
+        if not Path(a["path"]).is_file():
+            problems.append(f"shot {i}: footage is offline ({a['path']}). Reconnect the drive or card, "
+                            "or use Re-link in the Footage tab")
         if s.source_out > a["duration_s"] + 1e-3:
             problems.append(f"shot {i}: ends at {s.source_out:.2f}s but clip is {a['duration_s']:.2f}s")
     if problems:
