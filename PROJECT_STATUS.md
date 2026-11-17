@@ -52,7 +52,7 @@ need the user before Phase 1 starts (see "Waiting on the user").
   (tiny planet, rabbit hole, planet reveal, pans), vidstab for flat clips, basic auto edit,
   render and reference jobs with endpoints, reference-video analysis (D-019), Export and
   References screens (Sonnet subagent, reviewed; fixed reference length being ignored),
-  CineFlow.cmd launcher, public GitHub repo github.com/v1kr4m-ai/cineflow-ai.
+  CineFlow.cmd launcher (now Cursed_Video_Studio.cmd), public GitHub repo (now github.com/v1kr4m-ai/Cursed_Video_Studio).
   Real sample `poc/out/renders/sample_short_9x16.mp4`: 5 gyro shots with level horizon,
   planet reveal + tiny planet; 24 s took 620 s to render (R-15).
 - External skills reviewed (D-018): ideas adopted, no code copied.
@@ -62,6 +62,9 @@ need the user before Phase 1 starts (see "Waiting on the user").
   render, and can be re-linked by content fingerprint (`POST /projects/{id}/relink`, Footage tab).
   Moving 360 views use cubic interpolation (R-15): sample Short 620 s -> 271 s. Clip picker in
   Make a video shows thumbnails. 55 tests pass.
+
+- 2026-11-17: renamed to Cursed Video Studio (folder D:\Claude\Cursed_Video_Studio, GitHub repo,
+  window title, launcher `Cursed_Video_Studio.cmd`). Internal `cineflow` names unchanged.
 
 ## Not implemented
 
@@ -100,7 +103,7 @@ Reels/Shorts output (D-016).
 
 ## How to run
 
-Backend + desktop window: `run-dev.ps1` (Windows may need the user to allow local scripts).
+Backend + desktop window: double-click `Cursed_Video_Studio.cmd` (or `run-dev.ps1`) (Windows may need the user to allow local scripts).
 Or by hand: `cd backend && uv run uvicorn cineflow.api:app --host 127.0.0.1 --port 47615`, then
 `cd ui && npm run tauri dev`. Set `CINEFLOW_DB` to open a specific project database.
 

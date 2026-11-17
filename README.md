@@ -1,6 +1,8 @@
-# CineFlow AI
+# Cursed Video Studio
 
-CineFlow AI is a local-first AI cinematography studio for Windows. The first target is footage from the DJI Avata 360 recorded in D-Log M: the app imports the raw dual-fisheye files, stitches and reframes them into flat shots, applies DJI's own colour transform, and renders finished 16:9 and 9:16 videos. The design rule is: AI decides, deterministic software (FFmpeg) executes, and quality control verifies. Models are meant to produce a validated edit plan, never commands, and everything runs on your own machine.
+_Formerly CineFlow AI. Internal code names (the `cineflow` package, `CINEFLOW_*` settings, the `%LOCALAPPDATA%\CineFlow` data folder) keep the old name so existing setups keep working._
+
+Cursed Video Studio is a local-first AI cinematography studio for Windows. The first target is footage from the DJI Avata 360 recorded in D-Log M: the app imports the raw dual-fisheye files, stitches and reframes them into flat shots, applies DJI's own colour transform, and renders finished 16:9 and 9:16 videos. The design rule is: AI decides, deterministic software (FFmpeg) executes, and quality control verifies. Models are meant to produce a validated edit plan, never commands, and everything runs on your own machine.
 
 This is early work. Only the import, preview, colour and render path exist today. The AI parts (analysis, the Director that writes edit plans, the QC engine) are not built yet. See the status table below before you try it.
 
@@ -87,7 +89,7 @@ The UI is in `ui/` (React, TypeScript, Tauri v2). `poc/` holds the proof-of-conc
 
 ## Quick start
 
-Double-click `CineFlow.cmd`. It stops CineFlow processes left over from an earlier run (matched by command line; it never stops other programs), refuses to start if port 47615 belongs to another program, starts the backend in a minimised window, waits for `/health` to answer as CineFlow, installs UI packages on first run, and opens the desktop window with `npm run tauri dev`. Closing the window stops CineFlow's backend and frees the port. The first launch compiles the Rust shell and takes a while.
+Double-click `Cursed_Video_Studio.cmd`. It stops Cursed Video Studio processes left over from an earlier run (matched by command line; it never stops other programs), refuses to start if port 47615 belongs to another program, starts the backend in a minimised window, waits for `/health` to answer as Cursed Video Studio, installs UI packages on first run, and opens the desktop window with `npm run tauri dev`. Closing the window stops Cursed Video Studio's backend and frees the port. The first launch compiles the Rust shell and takes a while.
 
 By hand, in two terminals:
 
@@ -118,7 +120,7 @@ Tests that read real footage use the folder named by `CINEFLOW_SAMPLE_DIR` and a
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `CINEFLOW_DB` | Path of the SQLite database | `%LOCALAPPDATA%\CineFlow\cineflow.db` |
+| `CINEFLOW_DB` | Path of the SQLite database | `%LOCALAPPDATA%\Cursed Video Studio\cineflow.db` |
 | `CINEFLOW_FFMPEG` | Path to `ffmpeg.exe` | Looked up on `PATH` |
 | `CINEFLOW_FFPROBE` | Path to `ffprobe.exe` | Looked up on `PATH` |
 | `CINEFLOW_LUT_DIR` | Extra folder searched for the Avata 360 LUT | DJI Studio install |

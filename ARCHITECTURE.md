@@ -1,4 +1,4 @@
-# CineFlow AI — Architecture
+# Cursed Video Studio — Architecture
 
 Principle: AI decides, deterministic software executes, quality control verifies, the user
 steps in only when needed.

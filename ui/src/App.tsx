@@ -225,12 +225,12 @@ export default function App() {
   // every request with "404 Not Found", which is confusing without this check.
   useEffect(() => {
     fetch(`${API}/health`).then((r) => r.json()).then((h) => {
-      if (h?.service !== "cineflow") setError(`The server at ${API} is not CineFlow. Another program is using that port. Start CineFlow with CineFlow.cmd.`);
-    }).catch(() => setError(`CineFlow's backend is not running at ${API}. Start CineFlow with CineFlow.cmd.`));
+      if (h?.service !== "cineflow") setError(`The server at ${API} is not Cursed Video Studio. Another program is using that port. Start Cursed Video Studio with Cursed_Video_Studio.cmd.`);
+    }).catch(() => setError(`Cursed Video Studio's backend is not running at ${API}. Start Cursed Video Studio with Cursed_Video_Studio.cmd.`));
   }, []);
   return (
     <>
-      <header><h1>CineFlow <span>AI</span></h1></header>
+      <header><h1>Cursed <span>Video Studio</span></h1></header>
       {error && <ErrorBox text={error} onClose={() => setError(null)} />}
       {project
         ? <ProjectView key={project.id} project={project} onBack={() => setProject(null)} onError={setError} />

@@ -22,7 +22,7 @@ export async function call<T>(path: string, method = "GET", body?: unknown): Pro
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch (e) {
-    throw new Error(`Cannot reach the CineFlow backend at ${API}.\n${e}`);
+    throw new Error(`Cannot reach the Cursed Video Studio backend at ${API}.\n${e}`);
   }
   const text = await r.text();
   if (!r.ok) {

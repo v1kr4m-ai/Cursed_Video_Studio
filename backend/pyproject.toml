@@ -1,7 +1,7 @@
 [project]
 name = "cineflow"
 version = "0.1.0"
-description = "CineFlow AI backend: local-first automated video production engine"
+description = "Cursed Video Studio backend: local-first automated video production engine"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "fastapi>=0.115",

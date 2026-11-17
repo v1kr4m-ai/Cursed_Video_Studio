@@ -1,4 +1,4 @@
-# Starts the CineFlow backend, waits for /health, runs the Tauri window, stops the backend on exit.
+# Starts the Cursed Video Studio backend, waits for /health, runs the Tauri window, stops the backend on exit.
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"

@@ -105,7 +105,7 @@ async def lifespan(app: FastAPI):
     t.join(timeout=5)
 
 
-app = FastAPI(title="CineFlow AI", version=__version__, lifespan=lifespan)
+app = FastAPI(title="Cursed Video Studio", version=__version__, lifespan=lifespan)
 
 
 # Vite dev server; Tauri v2 webview origins (Windows http/https://tauri.localhost, macOS/Linux tauri://localhost).

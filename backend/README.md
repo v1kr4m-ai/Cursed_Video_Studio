@@ -1,4 +1,4 @@
-# CineFlow backend
+# Cursed Video Studio backend
 
 Python 3.12 (pinned via `uv`), FastAPI, SQLite.
 
