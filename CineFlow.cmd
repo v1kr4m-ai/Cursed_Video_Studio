@@ -49,5 +49,5 @@ exit /b
 
 :stopours
 rem Only processes whose command line is CineFlow's backend, or this project's Vite/Tauri dev server.
-powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -match 'cineflow\.api:app' -or ($_.CommandLine -match 'Claude_Video_Studio' -and $_.CommandLine -match 'vite|cineflow-desktop')) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -match 'cineflow\.api:app' -or ($_.CommandLine -match 'Cursed_Video_Studio' -and $_.CommandLine -match 'vite|cineflow-desktop')) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 exit /b

@@ -42,7 +42,7 @@ CPU and RAM were not re-measured; the brief states Core Ultra 9 275HX and 32 GB.
 
 ## Git
 
-`D:\Claude\Claude_Video_Studio` is a subfolder of a large repository rooted at `D:\Claude`
+`D:\Claude\Cursed_Video_Studio` is a subfolder of a large repository rooted at `D:\Claude`
 (branch `master`, many unrelated pending changes). The project folder was empty at start.
 Nothing has been committed. See DECISIONS.md D-009.
 
